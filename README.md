@@ -27,3 +27,14 @@ Vesratile HTTP proxy can send the request to multiple host:port.
                      |                     www.example.net:80
                      +--------------------+
 ```
+
+Vesratile HTTP proxy can load balance requests to multiple host:port.  
+`vht -p 8080 -t www.example.com:80,www.example.org,www.example.net -l`
+```
+                     :8080                 www.example.com:80
++--------------------+-  -  -  -  -  -  - +
+                     |                     www.example.org:80
+                     + -  -  -  -  -  -  -+
+                     |                     www.example.net:80
+                     +  -  -  -  -  -  -  +
+```
