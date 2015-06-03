@@ -1,13 +1,13 @@
 # Versatile-HTTP-proxy
-Vesratile HTTP proxy can act as a proxy.  
-`vht -p 8080 -t www.example.com:80`
+Versatile HTTP proxy can act as a proxy.  
+`vhp -p 8080 -t www.example.com:80`
 ```
                      :8080                 www.example.com:80
 +--------------------+--------------------+
 ```
 
-Vesratile HTTP proxy can send request multiple times.  
-`vht -p 8080 -t www.example.com:80 -m 3`
+Versatile HTTP proxy can send request multiple times.  
+`vhp -p 8080 -t www.example.com:80 -m 3`
 ```
                      :8080                 www.example.com:80
 +--------------------+--------------------+
@@ -17,8 +17,8 @@ Vesratile HTTP proxy can send request multiple times.
                      +--------------------+
 ```
 
-Vesratile HTTP proxy can send the request to multiple host:port.  
-`vht -p 8080 -t www.example.com:80,www.example.org,www.example.net`
+Versatile HTTP proxy can send the request to multiple host:port.  
+`vhp -p 8080 -t www.example.com:80,www.example.org,www.example.net`
 ```
                      :8080                 www.example.com:80
 +--------------------+--------------------+
@@ -28,8 +28,8 @@ Vesratile HTTP proxy can send the request to multiple host:port.
                      +--------------------+
 ```
 
-Vesratile HTTP proxy can load balance requests to multiple host:port.  
-`vht -p 8080 -t www.example.com:80,www.example.org,www.example.net -l`
+Versatile HTTP proxy can load balance requests to multiple host:port.  
+`vhp -p 8080 -t www.example.com:80,www.example.org,www.example.net -l`
 ```
                      :8080                 www.example.com:80
 +--------------------+-  -  -  -  -  -  - +

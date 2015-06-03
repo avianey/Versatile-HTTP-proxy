@@ -31,6 +31,12 @@
     </dependencies>
 
     <build>
+        <finalName>vhp-${project.version}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -56,7 +62,65 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>start-vhp</id>
+                        <phase>pre-integration-test</phase>
+                        <configuration>
+                            <target>
+                                <exec executable="${run.command}"
+                                    dir="${basedir}/scripts" 
+                                    spawn="true">
+                                    <arg value="${run.command.additionnal.arg}" />
+                                    <arg value="${basedir}/scripts/${start.script}" />
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-vhp</id>
+                        <phase>post-integration-test</phase>
+                        <configuration>
+                            <target>
+                                <exec executable="${run.command}"
+                                    dir="${basedir}/scripts" 
+                                    spawn="false">
+                                    <arg value="${run.command.additionnal.arg}" />
+                                    <arg value="${basedir}/scripts/${stop.script}" />
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>linux-properties</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <properties>
+                <run.command>sh</run.command>
+                <run.command.additionnal.arg></run.command.additionnal.arg>
+                <start.script>vhp.sh</start.script>
+                <stop.script>stop.sh</stop.script>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
