@@ -28,16 +28,23 @@
             <artifactId>guava</artifactId>
             <version>18.0</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
-        <finalName>vhp-${project.version}</finalName>
+        <finalName>vhp</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
         </resources>
         <plugins>
+        
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -64,6 +71,20 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.18.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.6</version>
                 <executions>
@@ -72,11 +93,12 @@
                         <phase>pre-integration-test</phase>
                         <configuration>
                             <target>
-                                <exec executable="${run.command}"
-                                    dir="${basedir}/scripts" 
-                                    spawn="true">
-                                    <arg value="${run.command.additionnal.arg}" />
-                                    <arg value="${basedir}/scripts/${start.script}" />
+                                <copy todir="${project.build.directory}">
+                                    <fileset dir="scripts"/>
+                                </copy>
+                                <!-- PROXY -->
+                                <exec executable="${run.command}" dir="${project.build.directory}" spawn="true" >
+                                    <arg line="${run.command.additionnal.arg} ${start.script} -p 8080 -t localhost:8081" />
                                 </exec>
                             </target>
                         </configuration>
@@ -89,12 +111,12 @@
                         <phase>post-integration-test</phase>
                         <configuration>
                             <target>
-                                <exec executable="${run.command}"
-                                    dir="${basedir}/scripts" 
-                                    spawn="false">
-                                    <arg value="${run.command.additionnal.arg}" />
-                                    <arg value="${basedir}/scripts/${stop.script}" />
-                                </exec>
+<!--                                 <exec executable="${run.command}" -->
+<!--                                     dir="${basedir}/scripts"  -->
+<!--                                     spawn="false"> -->
+<!--                                     <arg value="${run.command.additionnal.arg}" /> -->
+<!--                                     <arg value="${basedir}/scripts/${stop.script}" /> -->
+<!--                                 </exec> -->
                             </target>
                         </configuration>
                         <goals>

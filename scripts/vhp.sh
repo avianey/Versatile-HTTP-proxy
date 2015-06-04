@@ -1,2 +1,2 @@
 #!/bin/bash
-java -jar vhp.jar $*
+java -jar vhp.jar $* &

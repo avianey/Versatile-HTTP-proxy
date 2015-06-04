@@ -176,6 +176,7 @@ public class VersatileHttpProxy {
                 for (Service<HttpRequest, HttpResponse> target : targets) {
                     target.close();
                 }
+                System.out.println("vhp stopped");
             }
         });
     }
