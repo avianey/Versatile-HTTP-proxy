@@ -1,5 +1,7 @@
 package fr.avianey.vhp;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -20,21 +22,24 @@ import com.twitter.util.Future;
 import com.twitter.util.TimeoutException;
 
 
-public class ProxyITCase {
+public class MultiplyITCase {
     
     private ListeningServer targetServer; 
+    private AtomicInteger hitCount;
     
     @Before
     public void startTargetServer() throws TimeoutException, InterruptedException {
+        hitCount = new AtomicInteger();
         Service<HttpRequest, HttpResponse> target = new Service<HttpRequest, HttpResponse>() {
             @Override
             public Future<HttpResponse> apply(HttpRequest req) {
+                hitCount.incrementAndGet();
                 return Future.value((HttpResponse) new DefaultHttpResponse(
                         req.getProtocolVersion(), HttpResponseStatus.OK));
             }
             
         };
-        targetServer = Http.serve(":8081", target);
+        targetServer = Http.serve(":9091", target);
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 targetServer.close();
@@ -48,8 +53,9 @@ public class ProxyITCase {
     }
     
     @Test
-    public void shouldReachTargetThroughProxy() throws Exception {
-        Assert.assertEquals(HttpResponseStatus.OK, Await.result(Http.newService("localhost:8080").apply(new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "nowhere"))).getStatus());
+    public void shouldReachTargetMultipleTimes() throws Exception {
+        Await.result(Http.newService("localhost:9090").apply(new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "nowhere")));
+        Assert.assertEquals(3, hitCount.get());
     }
 
 }

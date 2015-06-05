@@ -100,6 +100,10 @@
                                 <exec executable="${run.command}" dir="${project.build.directory}" spawn="true" >
                                     <arg line="${run.command.additionnal.arg} ${start.script} -p 8080 -t localhost:8081" />
                                 </exec>
+                                <!-- MULTIPLY -->
+                                <exec executable="${run.command}" dir="${project.build.directory}" spawn="true" >
+                                    <arg line="${run.command.additionnal.arg} ${start.script} -p 9090 -t localhost:9091 -m 3" />
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -111,12 +115,9 @@
                         <phase>post-integration-test</phase>
                         <configuration>
                             <target>
-<!--                                 <exec executable="${run.command}" -->
-<!--                                     dir="${basedir}/scripts"  -->
-<!--                                     spawn="false"> -->
-<!--                                     <arg value="${run.command.additionnal.arg}" /> -->
-<!--                                     <arg value="${basedir}/scripts/${stop.script}" /> -->
-<!--                                 </exec> -->
+                                <exec executable="${run.command}" dir="${project.build.directory}" spawn="false" >
+                                    <arg line="${run.command.additionnal.arg} ${stop.script}" />
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
