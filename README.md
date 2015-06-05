@@ -15,10 +15,10 @@ Versatile HTTP proxy can send request multiple times.
                      +--------------------+
                      |                     www.example.com:80
                      +--------------------+
-```
+``` 
 
 Versatile HTTP proxy can send the request to multiple host:port.  
-`vhp -p 8080 -t www.example.com:80,www.example.org,www.example.net`
+`vhp -p 8080 -t www.example.com:80,www.example.org:80,www.example.net:80`
 ```
                      :8080                 www.example.com:80
 +--------------------+--------------------+
@@ -29,7 +29,7 @@ Versatile HTTP proxy can send the request to multiple host:port.
 ```
 
 Versatile HTTP proxy can load balance requests to multiple host:port.  
-`vhp -p 8080 -t www.example.com:80,www.example.org,www.example.net -l`
+`vhp -p 8080 -t www.example.com:80,www.example.org:80,www.example.net:80 -l`
 ```
                      :8080                 www.example.com:80
 +--------------------+-  -  -  -  -  -  - +
