@@ -15,14 +15,17 @@
  */
 package fr.avianey.vhp;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.jboss.netty.handler.codec.http.HttpRequest;
@@ -54,53 +57,52 @@ public class VersatileHttpProxy {
         OPTIONS_ORDER.put("dump-responses", i++);
     }
 
-    @SuppressWarnings("static-access")
     public static void main(String[] args) throws Exception {
         // create the command line parser
-        CommandLineParser parser = new BasicParser();
+        CommandLineParser parser = new DefaultParser();
 
         // create the Options
         Options options = new Options();
 
         // listen port
-        options.addOption(OptionBuilder                                    //
-                                  .isRequired()                            //
-                                  .withLongOpt("listen-port")              //
-                                  .withDescription("port to listen on")    //
-                                  .hasArg()                                //
-                                  .withArgName("port")                     //
-                                  .create("p"));                           //
+        options.addOption(Option.builder("p")                          //
+                                  .required()                          //
+                                  .longOpt("listen-port")              //
+                                  .desc("port to listen on")           //
+                                  .hasArg()                            //
+                                  .argName("port")                     //
+                                  .build());                           //
         // target host:port
-        options.addOption(OptionBuilder                                                                           //
-                                  .isRequired()                                                                   //
-                                  .withLongOpt("targeted-hosts")                                                  //
-                                  .withValueSeparator(',')                                                        //
-                                  .withDescription("comma separated list of host:port to forward requests to")    //
-                                  .hasArg()                                                                       //
-                                  .withArgName("targets")                                                         //
-                                  .create("t"));                                                                  //
+        options.addOption(Option.builder("t")                                                          //
+                                  .required()                                                          //
+                                  .longOpt("targeted-hosts")                                           //
+                                  .valueSeparator(',')                                                 //
+                                  .numberOfArgs(Option.UNLIMITED_VALUES)                               //
+                                  .desc("comma separated list of host:port to forward requests to")    //
+                                  .argName("targets")                                                  //
+                                  .build());                                                           //
         options.addOption("b", "load-balancing", false, "load balance requests across hosts");
-        options.addOption(OptionBuilder                                                                                               //
-                                  .withLongOpt("sticky")                                                                              //
-                                  .withDescription("if load balancing is enabled, always use the same target for the same client")    //
-                                  .create());                                                                                         //
+        options.addOption(Option.builder()                                                                                 //
+                                  .longOpt("sticky")                                                                       //
+                                  .desc("if load balancing is enabled, always use the same target for the same client")    //
+                                  .build());                                                                               //
         // multiply >= 1
-        options.addOption(OptionBuilder                                                                                    //
-                                  .withLongOpt("multiply")                                                                 //
-                                  .withDescription("number of time to forward each request to each target, must be > 0")   //
-                                  .hasArg()                                                                                //
-                                  .withArgName("count")                                                                    //
-                                  .create("m"));                                                                           //
+        options.addOption(Option.builder("m")                                                                   //
+                                  .longOpt("multiply")                                                          //
+                                  .desc("number of time to forward each request to each target, must be > 0")   //
+                                  .hasArg()                                                                     //
+                                  .argName("count")                                                             //
+                                  .build());                                                                    //
         // trace
         options.addOption("v", "verbose", false, "verbose mode");
-        options.addOption(OptionBuilder                                     //
-                                  .withLongOpt("dump-requests")             //
-                                  .withDescription("dump http requests")    //
-                                  .create());                               //
-        options.addOption(OptionBuilder                                     //
-                                  .withLongOpt("dump-responses")            //
-                                  .withDescription("dump http responses")   //
-                                  .create());                               //
+        options.addOption(Option.builder()                              //
+                                  .longOpt("dump-requests")             //
+                                  .desc("dump http requests")           //
+                                  .build());                            //
+        options.addOption(Option.builder()                              //
+                                  .longOpt("dump-responses")            //
+                                  .desc("dump http responses")          //
+                                  .build());                            //
 
         try {
             // parse the command line arguments
@@ -125,7 +127,7 @@ public class VersatileHttpProxy {
                     return OPTIONS_ORDER.get(k1) - OPTIONS_ORDER.get(k2);
                 }
             });
-            formatter.printHelp("hdt -p <port> -t <targets>", options);
+            formatter.printHelp("vhp -p <port> -t <targets>", options);
             System.exit(-1);
         }
     }

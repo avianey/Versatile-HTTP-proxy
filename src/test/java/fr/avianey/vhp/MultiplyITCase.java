@@ -39,7 +39,7 @@ public class MultiplyITCase {
             }
             
         };
-        targetServer = Http.serve(":9091", target);
+        targetServer = Http.serve(":8091", target);
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 targetServer.close();
@@ -54,7 +54,7 @@ public class MultiplyITCase {
     
     @Test
     public void shouldReachTargetMultipleTimes() throws Exception {
-        Await.result(Http.newService("localhost:9090").apply(new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "nowhere")));
+        Await.result(Http.newService("localhost:8090").apply(new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "nowhere")));
         Assert.assertEquals(3, hitCount.get());
     }
 
