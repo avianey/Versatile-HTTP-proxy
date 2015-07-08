@@ -1,6 +1,7 @@
 .settings/
 .project
 .classpath
+.idea/
 target/
 pom.xml.tag
 pom.xml.releaseBackup

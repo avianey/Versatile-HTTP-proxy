@@ -1,12 +1,12 @@
 /*
  * Copyright 2015 Antoine Vianey
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,12 +15,8 @@
  */
 package fr.avianey.vhp;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-
+import java.util.*;
+import java.util.concurrent.atomic.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -30,13 +26,17 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
-
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.twitter.finagle.Http;
 import com.twitter.finagle.ListeningServer;
 import com.twitter.finagle.Service;
 import com.twitter.util.Await;
+import com.twitter.util.Awaitable;
 import com.twitter.util.Future;
+import com.twitter.util.Futures;
+
+import static java.lang.System.currentTimeMillis;
 
 // TODO : suspend
 // TODO : slow network (rate)
@@ -53,6 +53,7 @@ public class VersatileHttpProxy {
         OPTIONS_ORDER.put("b", i++);
         OPTIONS_ORDER.put("sticky", i++);
         OPTIONS_ORDER.put("v", i++);
+        OPTIONS_ORDER.put("w", i++);
         OPTIONS_ORDER.put("dump-requests", i++);
         OPTIONS_ORDER.put("dump-responses", i++);
     }
@@ -93,6 +94,10 @@ public class VersatileHttpProxy {
                                   .hasArg()                                                                     //
                                   .argName("count")                                                             //
                                   .build());                                                                    //
+
+        // wait mode
+        options.addOption("w", "wait", false, "reply only when all responses received");
+
         // trace
         options.addOption("v", "verbose", false, "verbose mode");
         options.addOption(Option.builder()                              //
@@ -134,6 +139,8 @@ public class VersatileHttpProxy {
 
     @SuppressWarnings("unused")
     private static void start(CommandLine line) throws Exception {
+        final boolean verbose = line.hasOption("v");
+
         // initialize clients for each target
         String[] targetsDef = line.getOptionValues("t");
         final ArrayList<Service<HttpRequest, HttpResponse>> targets = new ArrayList<>();
@@ -142,33 +149,53 @@ public class VersatileHttpProxy {
         }
 
         // initialize logic
-        final boolean verbose = line.hasOption("v");
+        final boolean wait = line.hasOption("w");
         final boolean balance = line.hasOption("b");
         final int multiply = Integer.parseInt(line.getOptionValue("m", "1"));
         final Service<HttpRequest, HttpResponse> logic = new Service<HttpRequest, HttpResponse>() {
             @Override
             public Future<HttpResponse> apply(HttpRequest request) {
-                Collection<Service<HttpRequest, HttpResponse>> _targets; // ref to targets
-                if (balance) {
-                    _targets = ImmutableList.of(targets.get((int) (Math.random() * targets.size())));
-                } else {
-                    _targets = targets;
-                }
-                Future<HttpResponse> response = null;
+                Future<HttpResponse> future = null;
+                final AtomicInteger left = new AtomicInteger();
+                final AtomicInteger errors = new AtomicInteger();
+                final long start = currentTimeMillis();
+                final List<Future<HttpResponse>> responses = new ArrayList<>();
                 for (int i = 0; i < multiply; i++) {
+                    Collection<Service<HttpRequest, HttpResponse>> _targets; // ref to targets
+                    if (balance) {
+                        _targets = ImmutableList.of(targets.get((int) (Math.random() * targets.size())));
+                    } else {
+                        _targets = targets;
+                    }
                     for (Service<HttpRequest, HttpResponse> target : _targets) {
-                        response = target.apply(request);
-                        // for output :
-                        // ((Response) response.get()).getContentString()
+                        future = target.apply(request);
+                        responses.add(future);
                     }
                 }
-                return response;
+                if (future == null) {
+                    System.out.println("WTF");
+                }
+                if (wait) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Await.all(responses.toArray(new Future<?>[responses.size()]));
+                            } catch (Exception e) {
+                                throw Throwables.propagate(e);  // TODO handle exception
+                            }
+                            // longest : errors : ...
+                            System.out.println("Tick executed in " + (currentTimeMillis() - start) + " ms with " + errors.get() + " error(s)");
+                        }
+                    }).start();
+                }
+                return future;
             }
         };
 
         // start the proxy
         int port = Short.parseShort(line.getOptionValue("p"));
-        final ListeningServer proxy = Http.serve(":" + port, logic);
+        final ListeningServer proxy = Http.serve("slave.tornado.int:" + port, logic);
         Await.ready(proxy);
 
         // ensure correct shutdown
