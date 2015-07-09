@@ -29,8 +29,7 @@ public class ProxyITCase {
         Service<HttpRequest, HttpResponse> target = new Service<HttpRequest, HttpResponse>() {
             @Override
             public Future<HttpResponse> apply(HttpRequest req) {
-                return Future.value((HttpResponse) new DefaultHttpResponse(
-                        req.getProtocolVersion(), HttpResponseStatus.OK));
+                return Future.value((HttpResponse) new DefaultHttpResponse(req.getProtocolVersion(), HttpResponseStatus.OK));
             }
             
         };

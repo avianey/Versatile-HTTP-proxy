@@ -34,8 +34,7 @@ public class MultiplyITCase {
             @Override
             public Future<HttpResponse> apply(HttpRequest req) {
                 hitCount.incrementAndGet();
-                return Future.value((HttpResponse) new DefaultHttpResponse(
-                        req.getProtocolVersion(), HttpResponseStatus.OK));
+                return Future.value((HttpResponse) new DefaultHttpResponse(req.getProtocolVersion(), HttpResponseStatus.OK));
             }
             
         };
