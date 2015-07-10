@@ -1,16 +1,13 @@
 package fr.avianey.vhp;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
 import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.junit.After;
 import org.junit.Assert;
@@ -19,46 +16,46 @@ import org.junit.Test;
 
 import com.google.common.base.Throwables;
 import com.twitter.finagle.Http;
-import com.twitter.finagle.ListeningServer;
-import com.twitter.finagle.Service;
 import com.twitter.finagle.netty3.numWorkers;
 import com.twitter.util.Await;
 import com.twitter.util.Awaitable;
 import com.twitter.util.Duration;
-import com.twitter.util.Future;
 import com.twitter.util.TimeoutException;
+
+import fi.iki.elonen.NanoHTTPD;
 
 
 public class ParallelismITCase {
     
     private static final int PARALLELISM = (int) numWorkers.apply(); // finagle default
     
-    private ListeningServer target;
+    private NanoHTTPD server;
     private CyclicBarrier barrier = new CyclicBarrier(PARALLELISM);
     
     @Before
-    public void startTargetServers() throws TimeoutException, InterruptedException {
-        target = Http.serve(":9011", new Service<HttpRequest, HttpResponse>() {
+    public void startTargetServers() throws TimeoutException, InterruptedException, IOException {
+        server = new NanoHTTPD(9091) {
             @Override
-            public Future<HttpResponse> apply(HttpRequest req) {
+            public Response serve(IHTTPSession session) {
                 try {
                     barrier.await();
                 } catch (InterruptedException | BrokenBarrierException e) {
                     Throwables.propagate(e);
                 }
-                return Future.value((HttpResponse) new DefaultHttpResponse(req.getProtocolVersion(), HttpResponseStatus.OK));
+                return new Response("");
             }
-        });
+        };
+        server.start();
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                target.close();
+                server.stop();
             }
         });
     }
     
     @After
     public void stopTargetServers() {
-        target.close();
+        server.stop();
     }
     
     @Test
