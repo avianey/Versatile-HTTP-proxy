@@ -2,15 +2,16 @@
 
 [![Build Status](https://travis-ci.org/avianey/Versatile-HTTP-proxy.svg?branch=master)](https://travis-ci.org/avianey/Versatile-HTTP-proxy)
 
-Versatile HTTP proxy can act as a proxy.  
-`vhp -p 8080 -t www.example.com:80`
+Versatile HTTP proxy can act as a proxy.
+`vhp -l localhost:8080 -t www.example.com:80`
 ```
                      :8080                 www.example.com:80
 +--------------------o--------------------+
 ```
 
 Versatile HTTP proxy can send request multiple times.  
-`vhp -p 8080 -t www.example.com:80 -m 3`
+The response is randomly picked between the multiple responses received and sent back to the client when all responses have been received.  
+`vhp -l localhost:8080 -t www.example.com:80 -m 3`
 ```
                      :8080                 www.example.com:80
 +--------------------o--------------------+
@@ -18,10 +19,10 @@ Versatile HTTP proxy can send request multiple times.
                      o--------------------+
                      |                     www.example.com:80
                      o--------------------+
-``` 
+```
 
-Versatile HTTP proxy can send the request to multiple host:port.  
-`vhp -p 8080 -t www.example.com:80,www.example.org:80,www.example.net:80`
+Versatile HTTP proxy can send the request to multiple host:port.
+`vhp -p localhost:8080 -t www.example.com:80,www.example.org:80,www.example.net:80`
 ```
                      :8080                 www.example.com:80
 +--------------------o--------------------+
@@ -31,8 +32,8 @@ Versatile HTTP proxy can send the request to multiple host:port.
                      o--------------------+
 ```
 
-Versatile HTTP proxy can load balance requests to multiple host:port.  
-`vhp -p 8080 -t www.example.com:80,www.example.org:80,www.example.net:80 -l`
+Versatile HTTP proxy can load balance requests to multiple host:port.
+`vhp -p localhost:8080 -t www.example.com:80,www.example.org:80,www.example.net:80 -b`
 ```
                      :8080                 www.example.com:80
 +--------------------o-  -  -  -  -  -  - +

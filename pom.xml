@@ -98,15 +98,15 @@
                                 </copy>
                                 <!-- PROXY -->
                                 <exec executable="${run.command}" dir="${project.build.directory}" spawn="true" >
-                                    <arg line="${run.command.additionnal.arg} ${start.script} -p 8080 -t localhost:8081" />
+                                    <arg line="${run.command.additionnal.arg} ${start.script} -l localhost:8080 -t localhost:8081" />
                                 </exec>
                                 <!-- MULTIPLY -->
                                 <exec executable="${run.command}" dir="${project.build.directory}" spawn="true" >
-                                    <arg line="${run.command.additionnal.arg} ${start.script} -p 8090 -t localhost:8091 -m 3" />
+                                    <arg line="${run.command.additionnal.arg} ${start.script} -l localhost:8090 -t localhost:8091 -m 3" />
                                 </exec>
                                 <!-- MULTIPLE TARGETS -->
                                 <exec executable="${run.command}" dir="${project.build.directory}" spawn="true" >
-                                    <arg line="${run.command.additionnal.arg} ${start.script} -p 9000 -t localhost:9001,localhost:9002,localhost:9003" />
+                                    <arg line="${run.command.additionnal.arg} ${start.script} -l localhost:9000 -t localhost:9001,localhost:9002,localhost:9003" />
                                 </exec>
                             </target>
                         </configuration>

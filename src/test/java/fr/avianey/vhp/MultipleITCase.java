@@ -40,8 +40,7 @@ public class MultipleITCase {
                 public Future<HttpResponse> apply(HttpRequest req) {
                     System.out.println(port);
                     ports.add(port);
-                    return Future.value((HttpResponse) new DefaultHttpResponse(
-                            req.getProtocolVersion(), HttpResponseStatus.OK));
+                    return Future.value((HttpResponse) new DefaultHttpResponse(req.getProtocolVersion(), HttpResponseStatus.OK));
                 }
                 
             }));

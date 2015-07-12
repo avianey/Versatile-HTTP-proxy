@@ -1,12 +1,12 @@
 /*
  * Copyright 2015 Antoine Vianey
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,10 +16,11 @@
 package fr.avianey.vhp;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,12 +32,16 @@ import org.apache.commons.cli.ParseException;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponse;
 
-import com.google.common.collect.ImmutableList;
+import scala.runtime.AbstractFunction1;
+
+import com.twitter.finagle.Filter;
 import com.twitter.finagle.Http;
 import com.twitter.finagle.ListeningServer;
 import com.twitter.finagle.Service;
 import com.twitter.util.Await;
+import com.twitter.util.ConstFuture;
 import com.twitter.util.Future;
+import com.twitter.util.Return;
 
 // TODO : suspend
 // TODO : slow network (rate)
@@ -47,7 +52,7 @@ public class VersatileHttpProxy {
     private static final Map<String, Integer> OPTIONS_ORDER = new HashMap<>();
     static {
         int i = 0;
-        OPTIONS_ORDER.put("p", i++);
+        OPTIONS_ORDER.put("l", i++);
         OPTIONS_ORDER.put("t", i++);
         OPTIONS_ORDER.put("m", i++);
         OPTIONS_ORDER.put("b", i++);
@@ -65,12 +70,12 @@ public class VersatileHttpProxy {
         Options options = new Options();
 
         // listen port
-        options.addOption(Option.builder("p")                          //
+        options.addOption(Option.builder("l")                          //
                                   .required()                          //
-                                  .longOpt("listen-port")              //
-                                  .desc("port to listen on")           //
+                                  .longOpt("listen")                   //
+                                  .desc("host:port to listen on")      //
                                   .hasArg()                            //
-                                  .argName("port")                     //
+                                  .argName("host:port")                //
                                   .build());                           //
         // target host:port
         options.addOption(Option.builder("t")                                                          //
@@ -93,6 +98,7 @@ public class VersatileHttpProxy {
                                   .hasArg()                                                                     //
                                   .argName("count")                                                             //
                                   .build());                                                                    //
+
         // trace
         options.addOption("v", "verbose", false, "verbose mode");
         options.addOption(Option.builder()                              //
@@ -127,59 +133,58 @@ public class VersatileHttpProxy {
                     return OPTIONS_ORDER.get(k1) - OPTIONS_ORDER.get(k2);
                 }
             });
-            formatter.printHelp("vhp -p <port> -t <targets>", options);
+            formatter.printHelp("vhp -l <listen> -t <targets>", options);
             System.exit(-1);
         }
     }
 
     @SuppressWarnings("unused")
     private static void start(CommandLine line) throws Exception {
-        // initialize clients for each target
-        String[] targetsDef = line.getOptionValues("t");
-        final ArrayList<Service<HttpRequest, HttpResponse>> targets = new ArrayList<>();
-        for (String target : targetsDef) {
-            targets.add(Http.newService(target));
-        }
+        final boolean verbose = line.hasOption("v");
+        final List<Service<HttpRequest, HttpResponse>> targets = targets(line);
 
         // initialize logic
-        final boolean verbose = line.hasOption("v");
-        final boolean balance = line.hasOption("b");
-        final int multiply = Integer.parseInt(line.getOptionValue("m", "1"));
-        final Service<HttpRequest, HttpResponse> logic = new Service<HttpRequest, HttpResponse>() {
-            @Override
-            public Future<HttpResponse> apply(HttpRequest request) {
-                Collection<Service<HttpRequest, HttpResponse>> _targets; // ref to targets
-                if (balance) {
-                    _targets = ImmutableList.of(targets.get((int) (Math.random() * targets.size())));
-                } else {
-                    _targets = targets;
-                }
-                Future<HttpResponse> response = null;
-                for (int i = 0; i < multiply; i++) {
-                    for (Service<HttpRequest, HttpResponse> target : _targets) {
-                        response = target.apply(request);
-                        // for output :
-                        // ((Response) response.get()).getContentString()
-                    }
-                }
-                return response;
-            }
-        };
+        final Service<HttpRequest, List<HttpResponse>> logic = new ProxyService(
+                line.hasOption("b"), 
+                Integer.parseInt(line.getOptionValue("m", "1")), 
+                targets);
 
         // start the proxy
-        int port = Short.parseShort(line.getOptionValue("p"));
-        final ListeningServer proxy = Http.serve(":" + port, logic);
+        final ListeningServer proxy = Http.serve(line.getOptionValue("l"), 
+                new Filter<HttpRequest, HttpResponse, HttpRequest, List<HttpResponse>>() {
+                    @Override
+                    public Future<HttpResponse> apply(HttpRequest request, Service<HttpRequest, List<HttpResponse>> service) {
+                        return service.apply(request).flatMap(new AbstractFunction1<List<HttpResponse>, Future<HttpResponse>>() {
+                            @Override
+                            public Future<HttpResponse> apply(List<HttpResponse> responses) {
+                                HttpResponse response = responses.get(ThreadLocalRandom.current().nextInt(responses.size()));
+                                return new ConstFuture<HttpResponse>(new Return<HttpResponse>(response));
+                            }
+                        });
+                    }
+                }.andThen(logic)
+        );
         Await.ready(proxy);
 
         // ensure correct shutdown
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 proxy.close();
+                logic.close();
                 for (Service<HttpRequest, HttpResponse> target : targets) {
                     target.close();
                 }
                 System.out.println("vhp stopped");
             }
         });
+    }
+    
+    private static ArrayList<Service<HttpRequest, HttpResponse>> targets(CommandLine line) {
+        String[] targetsDef = line.getOptionValues("t");
+        final ArrayList<Service<HttpRequest, HttpResponse>> targets = new ArrayList<>();
+        for (String target : targetsDef) {
+            targets.add(Http.newService(target));
+        }
+        return targets;
     }
 }
