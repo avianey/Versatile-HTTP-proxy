@@ -45,3 +45,8 @@ Versatile HTTP proxy can load balance requests to multiple host:port.
                      |                     www.example.net:80
                      o  -  -  -  -  -  -  +
 ```
+#### Increase vhp worker threads
+It is possible to adjust worker threads used by vhp by setting the following additional flag :  
+```
+-Dcom.twitter.finagle.netty3.numWorkers=#NUM_THREADS
+```
