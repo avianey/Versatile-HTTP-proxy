@@ -58,7 +58,6 @@ public class VersatileHttpProxy {
         OPTIONS_ORDER.put("b", i++);
         OPTIONS_ORDER.put("sticky", i++);
         OPTIONS_ORDER.put("v", i++);
-        OPTIONS_ORDER.put("w", i++);
         OPTIONS_ORDER.put("dump-requests", i++);
         OPTIONS_ORDER.put("dump-responses", i++);
     }
@@ -100,9 +99,6 @@ public class VersatileHttpProxy {
                                   .argName("count")                                                             //
                                   .build());                                                                    //
 
-        // wait mode
-        options.addOption("w", "wait", false, "reply only when all responses received");
-
         // trace
         options.addOption("v", "verbose", false, "verbose mode");
         options.addOption(Option.builder()                              //
@@ -137,7 +133,7 @@ public class VersatileHttpProxy {
                     return OPTIONS_ORDER.get(k1) - OPTIONS_ORDER.get(k2);
                 }
             });
-            formatter.printHelp("vhp -p <port> -t <targets>", options);
+            formatter.printHelp("vhp -l <listen> -t <targets>", options);
             System.exit(-1);
         }
     }
